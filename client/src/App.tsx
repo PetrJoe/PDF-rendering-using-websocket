@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
-import { pdfjs } from 'pdfjs-dist';
+import pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 
 // Set worker path for pdfjs-dist
-pdfjs.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist/build/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist/build/pdf.worker.min.js';
 
 function App() {
   const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
