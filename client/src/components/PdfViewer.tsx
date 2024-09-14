@@ -39,11 +39,6 @@ const PdfViewer: React.FC = () => {
             <iframe
                 ref={iframeRef}
                 title="PDF Viewer"
-                style={{
-                    width: '100%',
-                    height: '100%',
-                    border: 'none',
-                }}
                 sandbox="allow-scripts"
             />
         </div>
