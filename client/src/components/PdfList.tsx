@@ -1,4 +1,4 @@
-import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface PdfListProps {
     pdfFiles: string[];
@@ -14,9 +14,9 @@ function PdfList({ pdfFiles }: PdfListProps) {
                 <ul>
                     {pdfFiles.map((pdfFile, index) => (
                         <li key={index}>
-                            <a href={`http://localhost:3000/uploads/${pdfFile}`} target="_blank" rel="noopener noreferrer">
+                            <Link to={`/pdf-viewer?file=${encodeURIComponent(pdfFile)}`}>
                                 {pdfFile}
-                            </a>
+                            </Link>
                         </li>
                     ))}
                 </ul>
