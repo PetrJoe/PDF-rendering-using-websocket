@@ -1,65 +1,31 @@
-import React, { useState, useEffect, useRef } from 'react';
-import pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
+import React, { useState, useEffect } from 'react';
+import UploadForm from './components/UploadForm';
+import PdfList from './components/PdfList';
 
-// Set worker path for pdfjs-dist
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist/build/pdf.worker.min.js';
+const App = () => {
+  const [pdfFiles, setPdfFiles] = useState<string[]>([]);
 
-function App() {
-  const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fetchPdfFiles = async () => {
+    try {
+      const response = await fetch('/api/files');
+      const data = await response.json();
+      setPdfFiles(data);
+    } catch (error) {
+      console.error('Error fetching files:', error);
+    }
+  };
 
   useEffect(() => {
-    // Use the provided WebSocket server URL
-    const socket = new WebSocket('ws://localhost:3000');
-
-    socket.onopen = () => {
-      console.log('WebSocket connection established');
-      socket.send('REQUEST_PDF');  // Send request to get PDF
-    };
-
-    socket.onmessage = (event) => {
-      const arrayBuffer = event.data instanceof ArrayBuffer ? event.data : new Uint8Array(event.data);
-      setPdfData(new Uint8Array(arrayBuffer));  // Store the PDF data
-    };
-
-    socket.onclose = () => {
-      console.log('WebSocket connection closed');
-    };
-
-    return () => socket.close();
+    fetchPdfFiles();
   }, []);
 
-  useEffect(() => {
-    if (pdfData && canvasRef.current) {
-      const loadingTask = pdfjsLib.getDocument({ data: pdfData });
-      loadingTask.promise.then((pdf) => {
-        pdf.getPage(1).then((page) => {
-          const viewport = page.getViewport({ scale: 1.0 });
-          const canvas = canvasRef.current!;
-          const context = canvas.getContext('2d')!;
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-
-          const renderContext = {
-            canvasContext: context,
-            viewport: viewport,
-          };
-          page.render(renderContext);
-        });
-      }).catch((error) => console.error('Error rendering PDF:', error));
-    }
-  }, [pdfData]);
-
   return (
-    <div>
-      <h1>PDF Viewer</h1>
-      {pdfData ? (
-        <canvas ref={canvasRef}></canvas>
-      ) : (
-        <p>Loading PDF...</p>
-      )}
+    <div className="App">
+      <h1>PDF Upload and Viewer</h1>
+      <UploadForm onUploadSuccess={fetchPdfFiles} />
+      <PdfList pdfFiles={pdfFiles} />
     </div>
   );
-}
+};
 
 export default App;
