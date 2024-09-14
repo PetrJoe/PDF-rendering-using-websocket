@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as pdfjsLib from 'pdfjs-dist/webpack';
+import 'pdfjs-dist/build/pdf.worker.entry';
 
 function App() {
-  const [pdfData, setPdfData] = useState(null);
+  const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     // Use the provided WebSocket server URL
-    const socket = new WebSocket('wss://potential-space-waffle-xp9jxx76gjgfg7g-3000.app.github.dev');
+    const socket = new WebSocket('ws://localhost:3000');
 
     socket.onopen = () => {
       console.log('WebSocket connection established');
@@ -13,9 +16,8 @@ function App() {
     };
 
     socket.onmessage = (event) => {
-      const blob = new Blob([event.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      setPdfData(url);  // Store the PDF data URL
+      const arrayBuffer = event.data instanceof ArrayBuffer ? event.data : new Uint8Array(event.data);
+      setPdfData(new Uint8Array(arrayBuffer));  // Store the PDF data
     };
 
     socket.onclose = () => {
@@ -25,11 +27,32 @@ function App() {
     return () => socket.close();
   }, []);
 
+  useEffect(() => {
+    if (pdfData && canvasRef.current) {
+      const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+      loadingTask.promise.then((pdf) => {
+        pdf.getPage(1).then((page) => {
+          const viewport = page.getViewport({ scale: 1.0 });
+          const canvas = canvasRef.current!;
+          const context = canvas.getContext('2d')!;
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport,
+          };
+          page.render(renderContext);
+        });
+      }).catch((error) => console.error('Error rendering PDF:', error));
+    }
+  }, [pdfData]);
+
   return (
     <div>
       <h1>PDF Viewer</h1>
       {pdfData ? (
-        <iframe src={pdfData} width="100%" height="600px" title="PDF Viewer"></iframe>
+        <canvas ref={canvasRef}></canvas>
       ) : (
         <p>Loading PDF...</p>
       )}
