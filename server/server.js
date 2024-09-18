@@ -3,6 +3,7 @@ const multer = require('multer');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { PDFDocument } = require('pdf-lib');
 
 const app = express();
 const PORT = 3000;
@@ -36,6 +37,7 @@ const upload = multer({
     }
 });
 
+// Upload PDF
 app.post('/upload', upload.single('pdf'), (req, res) => {
     if (!req.file) {
         return res.status(400).send('No file uploaded. Please upload a PDF.');
@@ -46,6 +48,7 @@ app.post('/upload', upload.single('pdf'), (req, res) => {
     });
 });
 
+// List PDF files
 app.get('/files', (req, res) => {
     fs.readdir(uploadFolder, (err, files) => {
         if (err) {
@@ -56,6 +59,7 @@ app.get('/files', (req, res) => {
     });
 });
 
+// Stream PDF file with additional headers
 app.get('/pdf/:filename', (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(__dirname, uploadFolder, filename);
@@ -66,17 +70,52 @@ app.get('/pdf/:filename', (req, res) => {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename="' + filename + '"');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
 
     const pdfStream = fs.createReadStream(filePath);
     pdfStream.pipe(res);
 });
 
-// Serve React app
-app.use(express.static(path.join(__dirname, 'dist')));
+// Render PDF API
+app.post('/render', express.json(), async (req, res) => {
+    const { text } = req.body;
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    if (!text) {
+        return res.status(400).send('No text provided for PDF rendering.');
+    }
+
+    try {
+        const pdfDoc = await PDFDocument.create();
+        const page = pdfDoc.addPage();
+        const { width, height } = page.getSize();
+        
+        // You can customize text settings here
+        const fontSize = 30;
+        page.drawText(text, {
+            x: 50,
+            y: height - fontSize - 50,
+            size: fontSize,
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline; filename="rendered.pdf"');
+        res.send(pdfBytes);
+    } catch (error) {
+        res.status(500).send('Error rendering PDF: ' + error.message);
+    }
 });
+
+// Serve React app
+// app.use(express.static(path.join(__dirname, 'dist')));
+
+// app.get('*', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+// });
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disable Right Click on Web Page Using JavaScript</title>
+    <style>
+        body {
+            text-align: center;
+        }
+        h1 {
+            color: green;
+        }
+        #GFG {
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>GeeksforGeeks</h1>
+
+    <h3>Right-click is disabled on this page.</h3>
+
+    <h3 id="GFG"></h3>
+
+    <script>
+        // Disable right click by default
+        document.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+        });
+
+        document.getElementById("GFG").innerText = "Right click disabled";
+    </script>
+</body>
+
+</html>
